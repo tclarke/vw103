@@ -1,6 +1,6 @@
 #include <EEPROM.h>
 #include <SPI.h>
-//#include <USBComposite.h>
+#include <USBComposite.h>
 #include "tuning_12tet.h"
 
 // define this to initialize a fresh board..this will write the initial EEPROM data
@@ -19,27 +19,31 @@ struct CalibrationData
   int gain[NUM_DAC_PORTS];  // fixed point * 10000
   int offset[NUM_DAC_PORTS];
 
-  uint16 get(uint16 Address)
+  uint16 load(uint16 addr)
   {
     uint16 rval = EEPROM_OK;
-    uint16* raw_data = (uint16*)this;
-    for (uint16 off = sizeof(CalibrationData)/2; off; --off)
+    for (size_t idx=0; idx < NUM_DAC_PORTS; idx++)
     {
-      if ((rval = EEPROM.read(Address + off, &raw_data[off])) != EEPROM_OK)
-        break;
+      uint16_t tmp1, tmp2;
+      rval = EEPROM.read(addr+(idx*4)+0, &tmp1); if (rval != EEPROM_OK) break;
+      rval = EEPROM.read(addr+(idx*4)+1, &tmp2); if (rval != EEPROM_OK) break;
+      gain[idx] = tmp1 << 16 | tmp2;
+      rval = EEPROM.read(addr+(idx*4)+2, &tmp1); if (rval != EEPROM_OK) break;
+      rval = EEPROM.read(addr+(idx*4)+3, &tmp2); if (rval != EEPROM_OK) break;
+      offset[idx] = tmp1 << 16 | tmp2;
     }
     return rval;
   }
   
-  uint16 put(uint16 Address)
+  uint16 save(uint16 addr)
   {
     uint16 rval = FLASH_COMPLETE;
-    const uint16* raw_data = (const uint16*)this;
-    for (uint16 off = sizeof(CalibrationData)/2; off; --off)
+    for (size_t idx=0; idx < NUM_DAC_PORTS; idx++)
     {
-      rval = EEPROM.update(Address + off, raw_data[off]);
-      if (rval != EEPROM_SAME_VALUE && rval != FLASH_COMPLETE)
-        break;
+      rval = EEPROM.update(addr+(idx*4)+0, gain[idx]>>16);       if (rval != EEPROM_SAME_VALUE && rval != FLASH_COMPLETE) break;
+      rval = EEPROM.update(addr+(idx*4)+1, gain[idx]&0xffff);    if (rval != EEPROM_SAME_VALUE && rval != FLASH_COMPLETE) break;
+      rval = EEPROM.update(addr+(idx*4)+2, offset[idx]>>16);     if (rval != EEPROM_SAME_VALUE && rval != FLASH_COMPLETE) break;
+      rval = EEPROM.update(addr+(idx*4)+3, offset[idx]&0xffff);  if (rval != EEPROM_SAME_VALUE && rval != FLASH_COMPLETE) break;
     }
     return rval;
   }
@@ -54,13 +58,14 @@ void setup()
 {
   pinMode(METRONOME, OUTPUT);
   digitalWrite(METRONOME, HIGH);
+//  EEPROM.format();
   CalibrationData calibration;
   for (int i = 0; i < NUM_DAC_PORTS; i++)
   {
     calibration.gain[i] = 10000;
     calibration.offset[i] = 0;
   }
-  calibration.put(EEPROM_CALIBRATION);
+  calibration.save(EEPROM_CALIBRATION);
 }
 
 void loop() {
@@ -108,7 +113,7 @@ private:
   Port _port;
 };
 
-class MIDI2CV ///: public USBMIDI
+class MIDI2CV : public USBMIDI
 {
   short tuning[128];
   //
@@ -144,7 +149,10 @@ public:
   void init()
   {
     // load calibration from the EEPROM
-    calibration.get(EEPROM_CALIBRATION);
+    calibration.load(EEPROM_CALIBRATION);
+    Serial1.println("Calibration");
+    Serial1.print(calibration.gain[0]); Serial1.print(","); Serial1.println(calibration.offset[0]);
+    Serial1.print(calibration.gain[1]); Serial1.print(","); Serial1.println(calibration.offset[1]);
 
     // default tuning
     memcpy(tuning, tuning_default, sizeof(tuning));
@@ -156,8 +164,9 @@ public:
 
     Serial1.println("Default tuning.");
     for (int i = 0; i < 128; i++) {
-      Serial1.println(tuning[i]);
+      Serial1.print(tuning[i]); Serial1.println("  ");
     }
+    Serial1.println("");
   }
   
   virtual void handleNoteOff(unsigned int channel, unsigned int note, unsigned int velocity)
@@ -200,12 +209,12 @@ private:
 
 TLV5618A dac(DAC_CS);
 MIDI2CV midi(dac);
-//USBCompositeSerial CompositeSerial;
+USBCompositeSerial CompositeSerial;
 
 void setup()
 {
   Serial1.begin(9600);
-//  USBComposite.setProductId(0x0030);
+  USBComposite.setProductId(0x0030);
 
   // setup the main class
   midi.init();
@@ -214,19 +223,12 @@ void setup()
   dac.init();
 
   // Setup USB MIDI interface
-//  midi.registerComponent();
-//  CompositeSerial.registerComponent();
-//  USBComposite.begin();
+  midi.registerComponent();
+  CompositeSerial.registerComponent();
+  USBComposite.begin();
 }
 
 void loop() {
-  for (int i = 0; i < 256; i++) {
-    Serial1.println(i);
-    midi.handleNoteOn(1, i, 0);
-    delay(500);
-    midi.handleNoteOff(1, i, 0);
-    delay(500);
-  }
-//    midi.poll();
+    midi.poll();
 }
 #endif
