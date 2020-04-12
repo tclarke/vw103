@@ -1,0 +1,9 @@
+&usart3 {
+	current-speed = <31250>;
+};
+
+/ {
+	aliases {
+		midi-port = &usart3;
+	};
+};
