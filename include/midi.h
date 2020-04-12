@@ -13,7 +13,7 @@ enum midi_status_t {
     MIDI_SYSTEM_MESSAGE     =0xf
 };
 
-#define IS_SYSTEM_REALTIME(b__) ((b__) & 0xf8)
+#define IS_SYSTEM_REALTIME(b__) (((b__) & 0xf8) == 0xf8)
 
 enum midi_system_t
 {
