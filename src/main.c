@@ -1,3 +1,20 @@
+/**
+ * This file is part of VW103.
+ *
+ *  VW103 is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Foobar is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Foobar.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #include <zephyr.h>
 #include <kernel.h>
 #include <stddef.h>
@@ -8,7 +25,7 @@
 #include "midi.h"
 
 #include <logging/log.h>
-LOG_MODULE_REGISTER(VW103);
+    LOG_MODULE_REGISTER(VW103);
 
 #define MIDI_DEV "UART_3"
 #define LED0 DT_ALIAS_LED0_GPIOS_CONTROLLER
