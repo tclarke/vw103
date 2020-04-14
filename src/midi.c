@@ -24,7 +24,7 @@
 #include "midi.h"
 
 #include <logging/log.h>
-    LOG_MODULE_REGISTER(MIDI, LOG_LEVEL_DBG);
+LOG_MODULE_REGISTER(MIDI, LOG_LEVEL_DBG);
 
 enum midi_status_t midi_parse_status_byte(uint8_t byte, int *cnt, uint8_t *chan)
 {

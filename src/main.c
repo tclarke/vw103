@@ -25,7 +25,7 @@
 #include "midi.h"
 
 #include <logging/log.h>
-    LOG_MODULE_REGISTER(VW103);
+LOG_MODULE_REGISTER(VW103, LOG_LEVEL_DBG);
 
 #define MIDI_DEV "UART_3"
 #define LED0 DT_ALIAS_LED0_GPIOS_CONTROLLER
